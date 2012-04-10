@@ -253,6 +253,38 @@
 :gc_environment_mark_objects_loop_finished
 	set j, [gc_marking_j]
 	set PC, j
+
+;**************************************************************************************************
+;***************** gc object promotion routines *************************************************
+;**************************************************************************************************
+
+;the dispatched routines just need to return the size in b
+;without touching a
+;j <- gc_promote_object(handle a)
+:gc_promote_object
+	set [gc_promote_j], j
+	set j, gc_promote_finish_size
+	set b, [gc_size_dispatch]
+	set c, [a]
+	set c, [c] ;deref the handle
+	shl c, 8 ;shift away the upper 8bits
+	shr c, 8 ;and back again so we have a good number
+	add b, c ;add our object type tag to the mark dispatcher
+	set PC, b ;do the dispatch
+:gc_promote_finish_size
+	set c, b
+	set a, [a] ;deref to the object
+	set b, [gc_gen2_pos]
+	set x, b
+	add x, c
+	ifg x, [gc_perm_gen_pos] ;not enough room
+		set PC, gc_mid_gen1_collection_overflow
+	set j, [gc_promote_j]
+	set PC, gc_mem_cpy
+
+:gc_mid_gen1_collection_overflow
+	set PC, j
+;this needs to interupt the gen1 collection and go collect gen2
 	
 ;**************************************************************************************************
 ;***************** gc gen1 collection routines ************************************************
@@ -597,16 +629,6 @@
 	set j, test_gc_new_enviornment
 	set PC, gc_new_environment
 
-	
-	
-:gc_promote_object
-	set a, 0x1337
-	set b, 0x1337
-	set c, 0x1337
-	set x, 0x1337
-	set y, 0x1337
-	set z, 0x1337
-	sub pc, 1
-	
+
 :static_code_end
 	dat 0x0000
