@@ -1,0 +1,80 @@
+;object kinds are lower half of first word in every object
+;	0x01 - list
+;		value
+;		next-pointer
+;	0x02 - array
+;		length
+;		allocated data
+;	0x03 - string
+;		length in 8bit words (not 16bit)
+;	 	allocated data (packed 8bit ASCII)
+;	0x04 - object-list
+;		object value
+;		next-pointer
+;	0x05 - object-array
+;		length
+;		allocated object pointers
+;	0x06 - binary tree node
+;		key (array)
+;		value (object)
+;		left
+;		right
+;	0x07 - binary tree leaf
+;		key (array)
+;		value (object)
+;	0x08 - object structure (user defined layout all objects)
+;		metadata-id
+;		field count
+;		fields
+;	0x09 - structure (user defined layout)
+;		metadata-id
+;		size
+;		data
+;	0x0a - boxed - int64
+;	0x0b - boxed - int32
+;	0x0c - boxed - int16
+;	0x0d - boxed - int8
+;	0x0e - boxed - uint64
+;	0x0f - boxed - uint32
+;	0x10 - boxed - uint16
+;	0x11 - boxed - uint8
+;	0x12 - decimal
+;		size
+;		data
+;	0x13 - implied decimal
+;		size (8bit)
+;		decimal point (8bit)
+;		data
+;	0x14 - environment
+;		parent
+;		resume-ip (this is an absolute ip if there isnt a function in the environment
+;			if there is a function this is an offset to execution
+;			it needs to be an offset so that functions participate in gc compaction
+;		function (this is null if we arent really a function environment)
+;		dynamic_lookup_tree (dynamic symbols are assigned id's globaly, and are looked up in the nearest environment)
+;		param-count
+;		local-object-count
+;		params (objects)
+;		local-objects
+;	0x15 - metadata entry
+;		metadata layout
+;	0x16 - var ( only way to mutate )
+;	0x17 - secure string (stored encrypted)
+;		length (in 8bit words)
+;		data (packed encrypted 8bit ASCII)
+;	0x18 - formatted string
+;		length (in 16bit words)
+;		data
+;	0x19 - bitfield
+;		bitcount
+;		data (allocated on a 16bit word boundry)
+;	0x1a - function
+;		metadata entry
+;		instruction-length (in 16bit words)
+;		instructions
+;	 upper half of tag is split into 2bits of gc survival count and 2bits to indicate generation
+;	 second 4 bits is gc flags
+;		- black
+;		- grey
+;		- white
+;	0x1b - load thunk

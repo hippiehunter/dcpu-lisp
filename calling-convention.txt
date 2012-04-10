@@ -1,0 +1,6 @@
+; calling convention
+; a b c if three or less arguments
+; a b + c as object array for greater than three arguments
+; j is the return location
+; sp is gen1 pos ( never modify this register outside of the GC/allocation routines
+; x, y, z, i are free to be used without having to clean up
