@@ -3,12 +3,12 @@
 	set PC, gc_init
 
 ; gc_info is layed out as follows
-;	- gen1 pos( only used for gc operations, normally this is sp)
+;	- gen1 pos
 ;	- gen1 alloc info
 ;		bit flags and resident percent
 ;		disable promotion (set this flag to prevent promotion if you are performing a mutating construction on an immutable object)
 ;	- gen1 end
-;	- gen2 pos (gen2 end is perm gen end, gen2 grows up perm gen grows down)
+;	- gen2 pos (gen2 end is paripheral start)
 ;	- allocated-object-list-head
 ;	- free-object-list-head
 ;	- perm gen pos
@@ -282,9 +282,7 @@
 	set j, [gc_promote_j]
 	set PC, gc_mem_cpy
 
-:gc_mid_gen1_collection_overflow
-	set PC, j
-;this needs to interupt the gen1 collection and go collect gen2
+
 	
 ;**************************************************************************************************
 ;***************** gc gen1 collection routines ************************************************
