@@ -108,22 +108,22 @@
 	set [gc_gen1_black_list], 0x0000
 
 	set y, gc_mark_dispatch
-	set (0x0001 + y), gc_list_mark
-	set (0x0002 + y), gc_no_mark ;array
-	set (0x0003 + y), gc_no_mark ;string
-	set (0x0004 + y), gc_object_list_mark
-	set (0x0005 + y), gc_object_array_mark
-	set (0x0006 + y), gc_no_mark ;binary tree (not implemented yet)
-	set (0x0014 + y), gc_environment_mark
+	set [0x0001 + y], gc_list_mark
+	set [0x0002 + y], gc_no_mark ;array
+	set [0x0003 + y], gc_no_mark ;string
+	set [0x0004 + y], gc_object_list_mark
+	set [0x0005 + y], gc_object_array_mark
+	set [0x0006 + y], gc_no_mark ;binary tree (not implemented yet)
+	set [0x0014 + y], gc_environment_mark
 
 	set y, gc_size_dispatch
-	set (0x0001 + y), gc_size_simple
-	set (0x0002 + y), gc_size_length ;array
-	set (0x0003 + y), gc_size_half_length ;string
-	set (0x0004 + y), gc_size_simple
-	set (0x0005 + y), gc_size_length
-	set (0x0006 + y), gc_size_simple ;binary tree (not implemented yet)
-	set (0x0014 + y), gc_size_environment
+	set [0x0001 + y], gc_size_simple
+	set [0x0002 + y], gc_size_length ;array
+	set [0x0003 + y], gc_size_half_length ;string
+	set [0x0004 + y], gc_size_simple
+	set [0x0005 + y], gc_size_length
+	set [0x0006 + y], gc_size_simple ;binary tree (not implemented yet)
+	set [0x0014 + y], gc_size_environment
 
 	set PC, j
 
@@ -137,35 +137,35 @@
 :gc_size_length
 	set b, 2 ;tag + length field + the length
 	set c, [a]
-	set c, (0x0001 + c) ;deref to length
+	set c, [0x0001 + c] ;deref to length
 	add b, c ;add the length to our static size
 	set PC, j
-	
+
 :gc_size_half_length
 	set b, 2 ;tag + length field + the length
 	set c, [a]
-	set c, (0x0001 + c) ;deref to length
+	set c, [0x0001 + c] ;deref to length
 	div c, 2
 	add c, o ;pick up the leftover if there is one
 	add b, c ;add the length to our static size
 	set PC, j
 :gc_size_environment
 	set c, [a]
-	set b, (0x0005 + c)
-	add b, (0x0006 + c)
+	set b, [0x0005 + c]
+	add b, [0x0006 + c]
 	add b, 7
 	set PC, j
-	
+
 ;**************************************************************************************************
 ;***************** gc object marking routines *************************************************
 ;**************************************************************************************************
 :gc_list_mark
-	set y,  (0x0002 + b) ;set y to list->next_ptr
+	set y,  [0x0002 + b] ;set y to list->next_ptr
 	ife y, 0 ;null next_ptr dump out
 		set PC, j
 	set a, [y] ;deref next_ptr to handle
 	set PC, gc_move_to_grey
-	
+
 :gc_no_mark
 	set PC, j
 
@@ -173,7 +173,7 @@
 	set [gc_marking_b], b
 	set [gc_marking_j], j
 	set j, gc_object_list_mark_finished
-	set y, (0x0002 + b) ;set y to list->next_ptr
+	set y, [0x0002 + b] ;set y to list->next_ptr
 	ife y, 0 ;was a null next_ptr skip it and do the value
 		set PC, gc_object_list_mark_finished_next_ptr
 	set a, [y]  ;deref next_ptr to handle
@@ -181,7 +181,7 @@
 :gc_object_list_mark_finished_next_ptr
 	set b, [gc_marking_b]
 	set j, gc_object_list_mark_finished
-	set a,  (0x0001 + b) ;move to value_ptr
+	set a,  [0x0001 + b] ;move to value_ptr
 	ife [a], 0 ;was a null value_ptr we're done here
 		set PC, gc_object_list_mark_finished
 	set a, [a]
@@ -190,7 +190,7 @@
 	set PC, [gc_marking_j]
 
 :gc_object_array_mark
-	set x, (0x0001 + b)
+	set x, [0x0001 + b]
 	add x, 2 ;add 2 so that we can start i past the tag and length
 	set [gc_marking_x], x ;x is the array length
 	set [gc_marking_b], b ;b is the object
@@ -211,36 +211,36 @@
 	set PC, gc_move_to_grey
 
 :gc_environment_mark
-	set [gc_marking_b], b	
+	set [gc_marking_b], b
 	set [gc_marking_j], j
 	set a, b
-	set a, (0x0001 + a) ;deref to the parent object handle
+	set a, [0x0001 + a] ;deref to the parent object handle
 	set j, gc_environment_mark_function
 	ife a, 0 ;was a null parent skip it and do the value
 		set PC, j
 	set PC, gc_move_to_grey
 :gc_environment_mark_function
 	set a, [gc_marking_b]
-	set a, (0x0003 + a) ;deref to function object handle
+	set a, [0x0003 + a] ;deref to function object handle
 	set j, gc_environment_mark_dynamic
 	ife a, 0 ;was a null function skip it and do the value
 		set PC, j
 	set PC, gc_move_to_grey
 :gc_environment_mark_dynamic
 	set a, [gc_marking_b]
-	set a, (0x0004 + a) ;deref to dynamic_lookup_tree object handle
+	set a, [0x0004 + a] ;deref to dynamic_lookup_tree object handle
 	set j, gc_environment_mark_objects_loop
 	ife a, 0 ;was a null dynamic_lookup_tree skip it and do the value
 		set PC, j
 	set PC, gc_move_to_grey
 :gc_environment_mark_objects_loop
 	set a, [gc_marking_b]
-	set [gc_marking_z], (0x0005 + a) ;params count
-	add [gc_marking_z], (0x0006 + a) ;locals count
+	set [gc_marking_z], [0x0005 + a] ;params count
+	add [gc_marking_z], [0x0006 + a] ;locals count
 	add a, 0x0007 ;skip ahead to the start of the objects
 	add [gc_marking_z], a ;set gc_marking_z to the end ptr for comparisons
 	set [gc_marking_i], a
-	set j, gc_environment_mark_objects_loop_body 
+	set j, gc_environment_mark_objects_loop_body
 :gc_environment_mark_objects_loop_body
 	ife [gc_marking_i], [gc_marking_z] ;we're done
 		set PC, gc_environment_mark_objects_loop_finished ;return out of the marker
@@ -283,13 +283,13 @@
 	set PC, gc_mem_cpy
 
 
-	
+
 ;**************************************************************************************************
 ;***************** gc gen1 collection routines ************************************************
 ;**************************************************************************************************
 
 ;start with the current environment, mark it grey
-;mark the head of the grey list black until 
+;mark the head of the grey list black until
 ;the grey list is null
 ;everything left in allocated is garbage
 ;mark all black list objects to be white
@@ -299,7 +299,7 @@
 ;add allocated list to the free list
 ;set allocated list to the black list
 ;black list is kept sorted when its created
-;realloc gen1 surviving objects 
+;realloc gen1 surviving objects
 :gc_collect_gen1
 	set a, [gc_current_environment]
 	set [gc_collect_j], j
@@ -311,7 +311,7 @@
 	set a, [gc_gen1_grey_list]
 	ife a, 0 ;null grey list, we're done here
 		set PC, gc_collect_gen1_grey_loop_finished
-	set [gc_gen1_grey_list], (0x0001 + a) ;pop one off the stack
+	set [gc_gen1_grey_list], [0x0001 + a] ;pop one off the stack
 	set PC, gc_blacken_object
 :gc_collect_gen1_grey_loop_finished
 	set j, [gc_collect_j]
@@ -322,7 +322,7 @@
 	ife a, 0 ;black loop is done
 		set PC, gc_collect_gen1_white_black_loop_finished
 	set b, a
-	set b, (0x0001 + b) ;get the next object handle
+	set b, [0x0001 + b] ;get the next object handle
 	set x, [gc_collect_a] ;save off our prior object handle
 	set [gc_collect_a], b ;replace our next loops target object handle with our current next handle
 	set a, [a] ;deref the object handle
@@ -347,7 +347,7 @@
 	set [gc_free_object_list_head], [gc_allocated_object_list_head]
 	set [gc_allocated_object_list_head], [gc_gen1_black_list]
 	set PC, [gc_collect_j]
-	
+
 ; j <- gc_move_to_grey(handle a)
 :gc_move_to_grey
 	set y, [a] ;deref the object handle
@@ -357,7 +357,7 @@
 	ife y, 0x0002 ;is it grey already? skip out if it is
 		set PC, j
 
-	set y, (0x0001 + a) ;get the next_node
+	set y, [0x0001 + a] ;get the next_node
 
 	ife [gc_allocated_object_list_head], a ;if we were the head then move to the next_node
 		set [gc_allocated_object_list_head], y
@@ -368,10 +368,10 @@
 ;j <- gc_blacken_object(handle a)
 :gc_blacken_object
 	set b, [a]
-	bor [b], 0x0800 ;or in black	
+	bor [b], 0x0800 ;or in black
 	set [gc_marking_a], a
 	set [gc_marking_b], b
-	set [gc_gen1_grey_list], (0x0001 + a) ;we're the head for the grey list so move it forward
+	set [gc_gen1_grey_list], [0x0001 + a] ;we're the head for the grey list so move it forward
 
 	set b, gc_gen1_black_list
 	set [gc_marking_j], j
@@ -387,7 +387,7 @@
 	shr y, 8 ;and back again so we have a good number
 	add x, y ;add our object type tag to the mark dispatcher
 	set PC, [x]
-	
+
 ;j <- gc_gen1_compact_object(handle a)
 :gc_gen1_compact_object
 	set [gc_promote_j], j
@@ -411,7 +411,7 @@
 	set j, [gc_promote_j]
 	set PC, gc_mem_cpy
 
-;j <- gc_mem_cpy(dst a, src b, length c)
+;j <- gc_mem_cpy(dst a, src b, length c]
 :gc_mem_cpy
 	add c, a
 :gc_mem_cpy_loop
@@ -421,7 +421,7 @@
 	add a, 1
 	add b, 1
 	set PC, gc_mem_cpy_loop
-	
+
 ;trigger halt of current program and re-initialze gc structures
 :gc_failure_to_big
 	set a, 0x8000 ;we're going to clear the screen
@@ -455,60 +455,60 @@
 		set PC, gc_init
 	sub a, 1
 	set PC, gc_failure_wait
-	
+
 ;j <- gc_get_handle(object a, out next-handle b)
 :gc_get_handle
 	ifn [gc_free_object_list_head], 0x0000
 		set PC, gc_get_free_handle
-	
+
 	set b, [gc_allocated_object_list_head] ;set the next node as the current head of allocated list
 	set PC, gc_new_list_node
 :gc_get_free_handle
 	set b, [gc_free_object_list_head]
-	set [gc_free_object_list_head], (0x0001 + b) ;remove ourselves from the free list
-	ife (0x0001 + b), 0
-		set PC, gc_get_free_handle_done	
-	set (0x0002 + b), 0x0000 ;remove ourselves as the new head's prior node
+	set [gc_free_object_list_head], [0x0001 + b] ;remove ourselves from the free list
+	ife [0x0001 + b], 0
+		set PC, gc_get_free_handle_done
+	set [0x0002 + b], 0x0000 ;remove ourselves as the new head's prior node
 :gc_get_free_handle_done
 	set [b], a ;actually store the object in the node
 :gc_get_handle_finish
 	set [gc_allocated_object_list_head], b ;set ourselves as the new head of allocated list
 	set PC, j
-	
+
 ; this is a double linked list ment to be used as an object handle only
 ;j <- gc_new_list_node(value a, ref next_ptr b, prior_ptr c)
 :gc_new_list_node
 	set x, [gc_perm_gen_pos]
 	add [gc_perm_gen_pos], 3
 	ifn b, 0 ;if there was a next_ptr
-		set (0x0002 + b), [gc_perm_gen_pos] ;set the next_ptr->prior_ptr to the node we are about to make
+		set [0x0002 + b], [gc_perm_gen_pos] ;set the next_ptr->prior_ptr to the node we are about to make
 	ifg [gc_perm_gen_pos], [gc_perm_gen_end]
 		set PC, gc_failure_to_big ;ran out of memory in the perm gen
-	set (0x0002 + x), c ;set the prior pointer
-	set (0x0001 + x), b ;set the next pointer
+	set [0x0002 + x], c ;set the prior pointer
+	set [0x0001 + x], b ;set the next pointer
 	set [x], a ;set the object pointer
 	set b, x ;b is the return result so that we can quickly reverse allocate a linked list
 	set pc, gc_get_handle_finish
-	
+
 ;j <- gc_move_list_node(current-node a, new-head* b, )
 :gc_move_list_node
 	;did we have a null prior node, then skip this
-	ife (0x0002 + a), 0 ;is prior node null?
+	ife [0x0002 + a], 0 ;is prior node null?
 		set PC, gc_move_list_node_after_set_prior
 
-	set z, (0x0002 + a) ;set z to a->prior_node
-	set (0x0001 + z), (0x0001 + a) ;a ->prior-node->next-node = a->next-node
+	set z, [0x0002 + a] ;set z to a->prior_node
+	set [0x0001 + z], [0x0001 + a] ;a ->prior-node->next-node = a->next-node
 :gc_move_list_node_after_set_prior
-	ife (0x0001 + a), 0 ;did we have a null next node, then skip this
+	ife [0x0001 + a], 0 ;did we have a null next node, then skip this
 		set PC, gc_move_list_node_after_set_next
-	set z, (0x0001 + a) ;set z to a->next_node
-	set (0x0002 + z), (0x0002 + a) ;a->next-node->prior-node = a->prior-node
+	set z, [0x0001 + a] ;set z to a->next_node
+	set [0x0002 + z], [0x0002 + a] ;a->next-node->prior-node = a->prior-node
 
-	set (0x0001 + a), [b] ;set our next_ptr to the new-head
-	set (0x0002 + a), 0x0000 ;clear our prior_ptr
+	set [0x0001 + a], [b] ;set our next_ptr to the new-head
+	set [0x0002 + a], 0x0000 ;clear our prior_ptr
 :gc_move_list_node_after_set_next
 	set [b], a ;place ourselves as the destination list head
-	set PC, j	
+	set PC, j
 
 ;j <- gc_move_list_node_sorted_high(current-node a, new-head* b)
 :gc_move_list_node_sorted_high
@@ -519,7 +519,7 @@
 	ifg [a], [x] ;we're sorted
 		set PC, gc_move_list_node
 	set c, [x]
-	set c, (0x0001 + c) ;get new-head->next_node
+	set c, [0x0001 + c] ;get new-head->next_node
 	ife c, 0 ;null next_node
 		set PC, gc_move_list_node_sorted_high_end
 	set b, x ;move b to the pointer to new-head->next_node
@@ -530,17 +530,17 @@
 	;if(old_head_prior != NULL)
 	;	old_head_prior->next_node = current-node
 	set y, [b]
-	set y, (0x0002 + y) ;y = [new-head]->prior_node
-	
+	set y, [0x0002 + y] ;y = [new-head]->prior_node
+
 	ife y, 0 ;i dont think this should ever occur
 		set PC, gc_move_list_node
-	set (0x0001 + y), a
+	set [0x0001 + y], a
 	set c, a
 	set a, [b]
 	set b, c
 	add b, 2 ;advance to the address of current-node->prior_node
 	set PC, gc_move_list_node
-	
+
 ;	0x14 - environment
 ;		parent
 ;		resume-ip (this is an absolute ip if there isnt a function in the environment
@@ -566,12 +566,12 @@
 	set PC, gc_check_collection ;check if we have enough memory to do this allocation
 :gc_new_environment_post_check
 	set y, [gc_gen1_pos]
-	set (0x0006 + y), b
-	set (0x0005 + y), a
-	set (0x0004 + y), 0x0000 ; we dont have any dynamic objects yet, set these externally
-	set (0x0003 + y), c ;set the function
-	set (0x0002 + y), j ;set the resume-ip
-	set (0x0001 + y), [gc_current_environment] ;set the parent
+	set [0x0006 + y], b
+	set [0x0005 + y], a
+	set [0x0004 + y], 0x0000 ; we dont have any dynamic objects yet, set these externally
+	set [0x0003 + y], c ;set the function
+	set [0x0002 + y], j ;set the resume-ip
+	set [0x0001 + y], [gc_current_environment] ;set the parent
 	set [y], 0x0014 ;set the tag
 	add [gc_gen1_pos], 7
 	add [gc_gen1_pos], a
@@ -584,14 +584,14 @@
 :gc_new_environment_after_get_handle
 	set [gc_current_environment], b ;set the current_environment to our new environment handle
 	set j, [gc_transfer_j]
-	ife (0x0003 + a), 0 ;did we have a function
+	ife [0x0003 + a], 0 ;did we have a function
 		set PC, gc_new_environment_function_dispatch
 	set PC, j
 :gc_new_environment_function_dispatch
 	set x, [c]
-	add j, (0x0003 + x) ;skip to instructions
+	add j, [0x0003 + x] ;skip to instructions
 	set PC, j
-	
+
 ;dont touch any argument register we arent going to restore
 ;[gc_transfer_j] <- gc_check_collection(requested-size z)
 :gc_check_collection
@@ -605,7 +605,7 @@
 	set [gc_transfer_b], b
 	set [gc_transfer_c], c
 	set [gc_transfer_i], [gc_transfer_j] ;we need an extra return point to make this generic
-	set [gc_transfer_j], j	
+	set [gc_transfer_j], j
 	set j, gc_check_collection_return_thunk
 	set PC, gc_collect_gen1 ;do the collection
 :gc_check_collection_return_thunk
